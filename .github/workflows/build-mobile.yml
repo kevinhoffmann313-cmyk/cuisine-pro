@@ -1,0 +1,71 @@
+name: Compilation mobile Cuisine Pro
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.ts'
+      - 'scripts/**'
+      - '.github/workflows/build-mobile.yml'
+
+jobs:
+  android-debug:
+    name: Construire Android (APK de test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Installer les dépendances
+        run: npm install
+      - name: Générer le projet Android
+        run: npm run cap:add:android
+      - name: Synchroniser Capacitor
+        run: npm run cap:sync
+      - name: Compiler l’APK de test
+        run: cd android && ./gradlew assembleDebug
+      - name: Publier l’APK de test
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuisine-pro-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  ios-simulator:
+    name: Compiler iOS pour simulateur (sans signature)
+    runs-on: macos-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installer les dépendances
+        run: npm install
+      - name: Générer le projet iOS
+        run: npm run cap:add:ios
+      - name: Synchroniser Capacitor
+        run: npm run cap:sync
+      - name: Compiler pour le simulateur
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Publier l’application du simulateur
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuisine-pro-ios-simulator
+          path: build/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: error
+          retention-days: 14
