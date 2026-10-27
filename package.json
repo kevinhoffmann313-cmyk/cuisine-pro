@@ -1,0 +1,20 @@
+{
+  "name": "cuisine-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cuisine Pro — application de gestion HACCP, recettes et production pour les professionnels de la cuisine.",
+  "scripts": {
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "cap:sync": "npm run prepare:web && cap sync",
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/ios": "^7.4.3",
+    "@capacitor/android": "^7.4.3"
+  }
+}
