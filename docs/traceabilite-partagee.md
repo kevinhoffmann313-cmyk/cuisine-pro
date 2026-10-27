@@ -19,14 +19,21 @@ Préparation sur la branche `feature/traceabilite-photos`. Aucun fichier de prod
 - Chemins de fichiers cloisonnés par identifiant utilisateur.
 - Clé publique/anon uniquement côté navigateur ; jamais de clé service_role dans l'application.
 
-## Pré-requis avant activation
-1. Créer/choisir un projet Supabase.
-2. Configurer l'authentification et l'URL de retour de l'application.
-3. Examiner puis faire approuver le script `supabase/traceabilite-schema.sql`.
-4. Exécuter le script uniquement après accord explicite.
-5. Ajouter la configuration publique du projet à l'application.
-6. Implémenter et tester l'interface photo, la connexion, les droits d'accès et les erreurs réseau sur iPhone et Mac.
-7. Valider l'export et la récupération des photos avant déploiement.
+## Étape suivante — activation contrôlée
+1. Créer ou choisir un projet Supabase dans le compte du propriétaire.
+2. Dans les réglages d'authentification, configurer l'URL du site et l'URL de retour `https://kevinhoffmann313-cmyk.github.io/cuisine-pro/`.
+3. Examiner le script `supabase/traceabilite-schema.sql` avant exécution. Il crée la table, active RLS, définit des politiques cloisonnées par `auth.uid()`, crée un bucket privé et maintient `updated_at`.
+4. Exécuter le script uniquement dans le projet choisi, après vérification. Le script est conçu pour être rejoué, mais il faut vérifier le résultat dans l'éditeur SQL et Storage.
+5. Récupérer uniquement l'URL du projet et la clé publique `anon`/publishable. Ne jamais mettre une clé `service_role` ou un secret serveur dans le dépôt ou le navigateur.
+6. Implémenter l'interface de connexion et la synchronisation dans l'application, avec états de chargement, erreurs réseau et règles d'accès.
+7. Tester avec deux sessions distinctes : chaque compte ne doit voir ni modifier les fiches ou photos de l'autre.
+8. Tester ajout, lecture, modification, suppression, photos, déconnexion, restauration réseau et export avant déploiement.
+9. Ne pas importer automatiquement les lots/photos déjà stockés localement. Prévoir une migration explicite après sauvegarde et validation.
+
+## État actuel
+- Le schéma SQL a été amélioré pour pouvoir être rejoué et mettre `updated_at` à jour.
+- Aucun projet Supabase n'a été connecté depuis cette conversation ; aucune migration SQL n'a été exécutée.
+- L'application de production continue d'utiliser le stockage local. La synchronisation n'est pas activée tant que la configuration du projet et l'interface ne sont pas ajoutées et testées.
 
 ## Sécurité et limites
 Le SQL est une proposition non exécutée. Les politiques doivent être testées dans le projet réel avant toute utilisation professionnelle. Les photos et fiches ne seront pas synchronisées tant que le backend n'est pas configuré et l'interface connectée. Ce module ne remplace pas les procédures de réception et le PMS validé.
