@@ -10,7 +10,7 @@
 <script>
 const SUPABASE_URL='https://vezzbekmqxpuoserdoub.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_FHy4QW5z9ILOFRYrp4ky0A_yFLNz21X';
-let supabaseClient=null, cloudUser=null;
+let supabaseClient=null, cloudUser=null, cloudReady=false;
 try{if(window.supabase&&window.supabase.createClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY)}catch(e){console.error('Supabase init failed',e)}
 const KEY='cuisinePro_v1';
 const PHOTO_DB='cuisinePro_photos_v1';
@@ -88,7 +88,7 @@ async function replaceStoredPhotos(photos){const records=(photos||[]).filter(p=>
 async function exportData(){try{const photos=await allStoredPhotos();const photoData=[];for(const p of photos){photoData.push({id:p.id,lotId:p.lotId,name:p.name||'photo',dataUrl:await blobToDataURL(p.blob)})}const payload={version:2,exportedAt:new Date().toISOString(),data:db,photos:photoData};const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='cuisine-pro-sauvegarde-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Sauvegarde exportée avec '+photoData.length+' photo(s).')}catch(err){console.error(err);toast('Export impossible. Vérifiez l’espace disponible et réessayez.')}}
 
 let cloudSaveTimer=null,cloudSaveBusy=false;
-function queueCloudSave(){if(!cloudUser||!supabaseClient)return;if(cloudSaveTimer)clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(async()=>{if(cloudSaveBusy)return;cloudSaveBusy=true;try{const {error}=await supabaseClient.from('cuisine_pro_data').upsert({user_id:cloudUser.id,payload:db,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;updateStatus()}catch(e){console.warn('Automatic cloud save failed',e);const el=document.getElementById('connectionStatus');if(el)el.textContent='● Erreur de synchronisation · local conservé'}finally{cloudSaveBusy=false}},1200)}
+function queueCloudSave(){if(!cloudUser||!supabaseClient||!cloudReady)return;if(cloudSaveTimer)clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(async()=>{if(cloudSaveBusy)return;cloudSaveBusy=true;try{const {error}=await supabaseClient.from('cuisine_pro_data').upsert({user_id:cloudUser.id,payload:db,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;updateStatus()}catch(e){console.warn('Automatic cloud save failed',e);const el=document.getElementById('connectionStatus');if(el)el.textContent='● Erreur de synchronisation · local conservé'}finally{cloudSaveBusy=false}},1200)}
 async function restoreCloudSession(){if(!supabaseClient)return;try{const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;cloudUser=data.session?.user||null;supabaseClient.auth.onAuthStateChange((_event,session)=>{cloudUser=session?.user||null;updateStatus();if(page==='settings')render()});updateStatus()}catch(e){console.warn('Session Supabase non restaurée',e)}}
 async function cloudAuth(mode){
  if(!supabaseClient){alert('Le client Supabase ne s’est pas chargé. Vérifiez la connexion internet puis rechargez l’application.');return}
@@ -115,17 +115,17 @@ async function cloudSync(){
   if(!remote){
    const {error:insertError}=await supabaseClient.from('cuisine_pro_data').insert({user_id:cloudUser.id,payload:db});
    if(insertError)throw insertError;
-   toast('Données locales envoyées vers le cloud.');return;
+   cloudReady=true;toast('Données locales envoyées vers le cloud.');return;
   }
   const choice=prompt('Des données existent déjà dans le cloud. Tapez LOCAL pour remplacer le cloud par les données de cet appareil, ou CLOUD pour remplacer les données locales par celles du cloud. Annulez pour ne rien changer.');
   if(!choice)return;
   if(choice.trim().toUpperCase()==='LOCAL'){
    const {error:upError}=await supabaseClient.from('cuisine_pro_data').update({payload:db,updated_at:new Date().toISOString()}).eq('user_id',cloudUser.id);
-   if(upError)throw upError;toast('Données locales envoyées vers le cloud.');
+   if(upError)throw upError;cloudReady=true;toast('Données locales envoyées vers le cloud.');
   }else if(choice.trim().toUpperCase()==='CLOUD'){
    const incoming=remote.payload;
    if(!incoming||!Array.isArray(incoming.recipes)||!Array.isArray(incoming.temps)||!Array.isArray(incoming.lots)||!Array.isArray(incoming.tasks))throw new Error('Les données cloud ne sont pas dans le format Cuisine Pro attendu.');
-   localStorage.setItem(KEY,JSON.stringify(incoming));db=incoming;loadFailed=false;persistenceError=false;render();toast('Données cloud chargées sur cet appareil.');
+   localStorage.setItem(KEY,JSON.stringify(incoming));db=incoming;loadFailed=false;persistenceError=false;cloudReady=true;render();toast('Données cloud chargées sur cet appareil.');
   }else alert('Choix non reconnu. Aucune donnée modifiée.');
  }catch(e){console.error(e);alert('Synchronisation impossible : '+(e.message||'erreur inconnue')+'. Vérifiez que le script SQL Cuisine Pro a bien été exécuté dans Supabase.')}
 }
