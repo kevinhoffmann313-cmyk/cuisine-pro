@@ -110,17 +110,27 @@ async function cloudSync(){
  if(!supabaseClient||!cloudUser){alert('Connectez-vous d’abord à votre compte Cuisine Pro.');return}
  if(!confirm('Avant la synchronisation, exportez une sauvegarde JSON depuis cette page. Continuer ?'))return;
  try{
-  const {data:remote,error}=await supabaseClient.from('cuisine_pro_data').select('payload,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+  // Refresh the session and obtain the authenticated user from Supabase itself.
+  const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+  if(sessionError)throw sessionError;
+  if(!sessionData.session){cloudUser=null;cloudReady=false;updateStatus();throw new Error('La session a expiré. Reconnectez-vous puis réessayez.')}
+  const {data:userData,error:userError}=await supabaseClient.auth.getUser();
+  if(userError)throw userError;
+  if(!userData.user){cloudUser=null;cloudReady=false;updateStatus();throw new Error('Supabase ne reconnaît pas de compte connecté. Déconnectez-vous puis reconnectez-vous.')}
+  cloudUser=userData.user;
+  const authenticatedUserId=userData.user.id;
+  updateStatus();
+  const {data:remote,error}=await supabaseClient.from('cuisine_pro_data').select('payload,updated_at').eq('user_id',authenticatedUserId).maybeSingle();
   if(error)throw error;
   if(!remote){
-   const {error:insertError}=await supabaseClient.from('cuisine_pro_data').insert({user_id:cloudUser.id,payload:db});
+   const {error:insertError}=await supabaseClient.from('cuisine_pro_data').insert({user_id:authenticatedUserId,payload:db});
    if(insertError)throw insertError;
    cloudReady=true;toast('Données locales envoyées vers le cloud.');return;
   }
   const choice=prompt('Des données existent déjà dans le cloud. Tapez LOCAL pour remplacer le cloud par les données de cet appareil, ou CLOUD pour remplacer les données locales par celles du cloud. Annulez pour ne rien changer.');
   if(!choice)return;
   if(choice.trim().toUpperCase()==='LOCAL'){
-   const {error:upError}=await supabaseClient.from('cuisine_pro_data').update({payload:db,updated_at:new Date().toISOString()}).eq('user_id',cloudUser.id);
+   const {error:upError}=await supabaseClient.from('cuisine_pro_data').update({payload:db,updated_at:new Date().toISOString()}).eq('user_id',authenticatedUserId);
    if(upError)throw upError;cloudReady=true;toast('Données locales envoyées vers le cloud.');
   }else if(choice.trim().toUpperCase()==='CLOUD'){
    const incoming=remote.payload;
