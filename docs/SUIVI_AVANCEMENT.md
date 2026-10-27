@@ -25,6 +25,12 @@ Mise à jour : 28 octobre 2026
 - Déploiement GitHub Pages de ce commit : succès.
 - Compilation mobile du même commit : en cours lors de cette mise à jour. Vérifier la page Actions pour les résultats définitifs.
 
+## Préparation TestFlight — 28 octobre 2026
+- Workflow manuel ajouté : `.github/workflows/testflight.yml` (archive iOS signée, export IPA, tentative d’envoi à TestFlight).
+- Guide de configuration ajouté : `docs/CONFIGURATION_TESTFLIGHT.md`.
+- Le workflow ne peut pas être lancé avec succès avant d’ajouter les secrets de signature Apple et la clé API App Store Connect dans GitHub Actions.
+- Aucun build n’a encore été envoyé à TestFlight par ce workflow.
+
 ## À terminer avant publication
 1. Configurer les applications Apple/Google dans RevenueCat et créer les produits ainsi que l’entitlement `premium`.
 2. Intégrer le SDK natif à un vrai parcours d’achat et à la restauration des achats.
