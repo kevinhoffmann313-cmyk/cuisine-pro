@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'confidentialite.html'
+      - 'conditions.html'
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.ts'
