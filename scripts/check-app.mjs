@@ -13,6 +13,13 @@ check('Stockage photos préservé', /const PHOTO_DB='cuisinePro_photos_v1'/.test
 check('Synchronisation Supabase présente', /createClient\(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY\)/.test(html));
 check('Effacement automatique des archives désactivé', /async function purgeExpiredRecords\(\)\{\/\* Conservation volontaire/.test(html));
 
+const prep = await readFile(new URL('./prepare-web.mjs', import.meta.url), 'utf8');
+check('Pages légales incluses dans les builds mobiles', /'confidentialite\.html', 'conditions\.html'/.test(prep));
+const privacy = await readFile(new URL('../confidentialite.html', import.meta.url), 'utf8');
+const terms = await readFile(new URL('../conditions.html', import.meta.url), 'utf8');
+check('Page de confidentialité présente', /<html/i.test(privacy));
+check('Page des conditions présente', /<html/i.test(terms));
+
 const inlineScripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
   .filter(([, attrs, body]) => !/\bsrc\s*=/.test(attrs) && body.trim());
 check('Scripts JavaScript intégrés présents', inlineScripts.length > 0);
