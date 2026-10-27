@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 const root = process.cwd();
 const out = resolve(root, 'www');
 await mkdir(out, { recursive: true });
-for (const file of ['index.html', 'manifest.webmanifest', 'sw.js', 'icon.svg']) {
+for (const file of ['index.html', 'manifest.webmanifest', 'sw.js', 'icon.svg', 'confidentialite.html', 'conditions.html']) {
   try {
     await access(resolve(root, file));
     await cp(resolve(root, file), resolve(out, file));
