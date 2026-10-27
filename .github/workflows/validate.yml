@@ -1,0 +1,25 @@
+name: Vérification Cuisine Pro
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installer les dépendances
+        run: npm install
+      - name: Vérifier le JavaScript et les protections de données
+        run: node scripts/check-app.mjs
+      - name: Préparer le bundle web pour Capacitor
+        run: npm run prepare:web
