@@ -17,8 +17,8 @@ permissions:
   contents: read
 
 jobs:
-  android-release:
-    name: Compiler le bundle Android signé (.aab)
+  android-test:
+    name: Compiler APK Android de test (sans clé de publication)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -47,19 +47,67 @@ jobs:
           npm run cap:add:android
           npm run cap:sync
 
+      - name: Compiler APK de test
+        run: cd android && ./gradlew assembleDebug
+
+      - name: Publier l’APK de test
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuisine-pro-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  android-release:
+    name: Compiler le bundle Android signé (.aab)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Vérifier les secrets de signature
+        id: signing
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          test -n "$KEYSTORE_BASE64" || (echo "Secret manquant : ANDROID_KEYSTORE_BASE64" && exit 1)
-          test -n "$KEYSTORE_PASSWORD" || (echo "Secret manquant : ANDROID_KEYSTORE_PASSWORD" && exit 1)
-          test -n "$KEY_ALIAS" || (echo "Secret manquant : ANDROID_KEY_ALIAS" && exit 1)
-          test -n "$KEY_PASSWORD" || (echo "Secret manquant : ANDROID_KEY_PASSWORD" && exit 1)
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Les secrets de signature ne sont pas encore configurés. Le build de publication est ignoré; l’APK de test reste disponible dans l’autre tâche."
+          fi
+
+      - name: Installer les dépendances
+        if: steps.signing.outputs.available == 'true'
+        run: npm install
+
+      - name: Préparer les fichiers web
+        if: steps.signing.outputs.available == 'true'
+        run: npm run prepare:web
+
+      - name: Générer et synchroniser le projet Android
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          npm run cap:add:android
+          npm run cap:sync
 
       - name: Préparer la clé de signature
+        if: steps.signing.outputs.available == 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
@@ -67,6 +115,7 @@ jobs:
           test -s "$RUNNER_TEMP/cuisine-pro-upload.jks"
 
       - name: Compiler le bundle signé pour Google Play
+        if: steps.signing.outputs.available == 'true'
         env:
           KEYSTORE_FILE: ${{ runner.temp }}/cuisine-pro-upload.jks
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -81,6 +130,7 @@ jobs:
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Publier le bundle Android (.aab)
+        if: steps.signing.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: cuisine-pro-google-play-aab
