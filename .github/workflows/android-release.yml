@@ -140,14 +140,14 @@ jobs:
 
           app_gradle = Path("android/app/build.gradle")
           app_text = app_gradle.read_text()
-          app_text, count = re.subn(r'(?m)^(\\s*versionCode\\s+)1(\\s*(?://.*)?$)', r'\\g<1>2\\g<2>', app_text)
+          app_text, count = re.subn(r'(?m)^(\s*versionCode\s+)1(\s*(?://.*)?$)', r'\g<1>2\g<2>', app_text)
           if count != 1:
               raise SystemExit(f"Impossible de mettre versionCode à 2 (remplacements: {count})")
           app_gradle.write_text(app_text)
 
           variables = Path("android/variables.gradle")
           variables_text = variables.read_text()
-          variables_text, count = re.subn(r'(?m)^(\\s*targetSdkVersion\\s*=\\s*)\\d+', r'\\g<1>36', variables_text)
+          variables_text, count = re.subn(r'(?m)^(\s*targetSdkVersion\s*=\s*)\d+', r'\g<1>36', variables_text)
           if count < 1:
               raise SystemExit("targetSdkVersion introuvable dans android/variables.gradle")
           variables.write_text(variables_text)
