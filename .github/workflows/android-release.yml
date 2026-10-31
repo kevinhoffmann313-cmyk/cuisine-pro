@@ -49,9 +49,15 @@ jobs:
 
       - name: Définir le SDK Android minimum à 24
         run: |
-          sed -i 's/minSdkVersion = 23/minSdkVersion = 24/' android/variables.gradle
-          grep -n 'minSdkVersion' android/variables.gradle
+          sed -i \
+            -e 's/minSdkVersion = 23/minSdkVersion = 24/' \
+            -e 's/compileSdkVersion = 35/compileSdkVersion = 36/' \
+            -e 's/targetSdkVersion = 35/targetSdkVersion = 36/' \
+            android/variables.gradle
+          grep -nE 'minSdkVersion|compileSdkVersion|targetSdkVersion' android/variables.gradle
           grep -q 'minSdkVersion = 24' android/variables.gradle
+          grep -q 'compileSdkVersion = 36' android/variables.gradle
+          grep -q 'targetSdkVersion = 36' android/variables.gradle
 
       - name: Compiler APK de test
         run: cd android && ./gradlew assembleDebug
@@ -115,9 +121,15 @@ jobs:
       - name: Définir le SDK Android minimum à 24
         if: steps.signing.outputs.available == 'true'
         run: |
-          sed -i 's/minSdkVersion = 23/minSdkVersion = 24/' android/variables.gradle
-          grep -n 'minSdkVersion' android/variables.gradle
+          sed -i \
+            -e 's/minSdkVersion = 23/minSdkVersion = 24/' \
+            -e 's/compileSdkVersion = 35/compileSdkVersion = 36/' \
+            -e 's/targetSdkVersion = 35/targetSdkVersion = 36/' \
+            android/variables.gradle
+          grep -nE 'minSdkVersion|compileSdkVersion|targetSdkVersion' android/variables.gradle
           grep -q 'minSdkVersion = 24' android/variables.gradle
+          grep -q 'compileSdkVersion = 36' android/variables.gradle
+          grep -q 'targetSdkVersion = 36' android/variables.gradle
 
       - name: Préparer la clé de signature
         if: steps.signing.outputs.available == 'true'
