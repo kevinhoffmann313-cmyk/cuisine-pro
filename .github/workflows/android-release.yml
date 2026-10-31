@@ -47,6 +47,12 @@ jobs:
           npm run cap:add:android
           npm run cap:sync
 
+      - name: Définir le SDK Android minimum à 24
+        run: |
+          sed -i 's/minSdkVersion = 23/minSdkVersion = 24/' android/variables.gradle
+          grep -n 'minSdkVersion' android/variables.gradle
+          grep -q 'minSdkVersion = 24' android/variables.gradle
+
       - name: Compiler APK de test
         run: cd android && ./gradlew assembleDebug
 
@@ -105,6 +111,13 @@ jobs:
         run: |
           npm run cap:add:android
           npm run cap:sync
+
+      - name: Définir le SDK Android minimum à 24
+        if: steps.signing.outputs.available == 'true'
+        run: |
+          sed -i 's/minSdkVersion = 23/minSdkVersion = 24/' android/variables.gradle
+          grep -n 'minSdkVersion' android/variables.gradle
+          grep -q 'minSdkVersion = 24' android/variables.gradle
 
       - name: Préparer la clé de signature
         if: steps.signing.outputs.available == 'true'
