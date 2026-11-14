@@ -22,7 +22,7 @@ jobs:
           cache: npm
 
       - name: Installer les dépendances
-        run: npm ci
+        run: npm install
 
       - name: Préparer les fichiers web
         run: npm run prepare:web
@@ -96,10 +96,16 @@ jobs:
             -exportPath build/export \
             -exportOptionsPlist build/ExportOptions.plist
 
+      - name: Localiser le fichier IPA exporté
+        run: |
+          IPA_PATH="$(find build/export -maxdepth 1 -name '*.ipa' -print -quit)"
+          test -n "$IPA_PATH" || (echo "Aucun fichier IPA exporté" && exit 1)
+          echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
+
       - name: Envoyer le build sur TestFlight
-        uses: apple-actions/upload-testflight-build@v1
+        uses: apple-actions/upload-testflight-build@v5
         with:
-          app-path: build/export/CuisinePro.ipa
+          app-path: ${{ env.IPA_PATH }}
           issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
           api-key-id: ${{ secrets.APPSTORE_API_KEY_ID }}
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
