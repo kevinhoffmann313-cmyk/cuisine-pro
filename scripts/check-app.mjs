@@ -29,7 +29,7 @@ for (let i = 0; i < inlineScripts.length; i++) {
     new vm.Script(body, { filename: `index-inline-${i + 1}.js` });
     checks.push({ name: `Syntaxe JavaScript intégrée #${i + 1}`, ok: true });
   } catch (error) {
-    checks.push({ name: `Syntaxe JavaScript intégrée #${i + 1}: ${error.message}`, ok: false });
+    checks.push({ name: `Syntaxe JavaScript intégrée #${i + 1}: ${error.stack || error.message}`, ok: false });
   }
 }
 for (const item of checks) console.log(`${item.ok ? 'OK' : 'ÉCHEC'} — ${item.name}`);
